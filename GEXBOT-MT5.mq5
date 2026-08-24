@@ -1,6 +1,6 @@
 //+------------------------------------------------------------------+
 //|                                           Gexbot Integration.mq5 |
-//|               EA para ingegrar Gexbot Classic con MT5            |
+//|               EA para integrar Gexbot Classic con MT5            |
 //+------------------------------------------------------------------+
 #property copyright "Romer Franco"
 #property link      "Public"
