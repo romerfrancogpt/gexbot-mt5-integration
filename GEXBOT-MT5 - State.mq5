@@ -3,6 +3,7 @@
 //|               EA Classic (Sides) + State (Center Divergent Bars) |
 //|                                                                  |
 //+------------------------------------------------------------------+
+
 #property copyright "Romer Franco"
 #property link      "Public"
 #property version   "2.20"
@@ -614,21 +615,31 @@ void DrawHistogram()
    // Dibujar OI (DEX) en el lado izquierdo
    for(int i = 0; i < ArraySize(DexArray); i++)
      {
+      string barName = "DEX_"+DoubleToString(DexArray[i].strike, 2);
       int x, y; 
-      if(!ChartTimePriceToXY(0, 0, TimeCurrent(), DexArray[i].strike, x, y)) continue;
+      if(!ChartTimePriceToXY(0, 0, TimeCurrent(), DexArray[i].strike, x, y))
+        {
+         if(ObjectFind(0, barName) >= 0) ObjectDelete(0, barName);
+         continue;
+        }
       double ratio = (MaxDexExposure > 0) ? MathAbs(DexArray[i].net_exposure) / MaxDexExposure : 0;
       int bw = (int)MathMax(1, ratio * InpMaxBarWidth);
-      CreateOrUpdateBar("DEX_"+DoubleToString(DexArray[i].strike, 2), 0, (int)y-(InpBarThickness/2), bw, InpBarThickness, (DexArray[i].net_exposure >= 0 ? InpDexColorPos : InpDexColorNeg));
+      CreateOrUpdateBar(barName, 0, (int)y-(InpBarThickness/2), bw, InpBarThickness, (DexArray[i].net_exposure >= 0 ? InpDexColorPos : InpDexColorNeg));
      }
 
    // Dibujar Volumen (GEX) en el lado derecho
    for(int i = 0; i < ArraySize(GexArray); i++)
      {
+      string barName = "GEX_"+DoubleToString(GexArray[i].strike, 2);
       int x, y; 
-      if(!ChartTimePriceToXY(0, 0, TimeCurrent(), GexArray[i].strike, x, y)) continue;
+      if(!ChartTimePriceToXY(0, 0, TimeCurrent(), GexArray[i].strike, x, y))
+        {
+         if(ObjectFind(0, barName) >= 0) ObjectDelete(0, barName);
+         continue;
+        }
       double ratio = (MaxGexExposure > 0) ? MathAbs(GexArray[i].net_exposure) / MaxGexExposure : 0;
       int bw = (int)MathMax(1, ratio * InpMaxBarWidth);
-      CreateOrUpdateBar("GEX_"+DoubleToString(GexArray[i].strike, 2), (int)cw-bw, (int)y-(InpBarThickness/2), bw, InpBarThickness, (GexArray[i].net_exposure >= 0 ? InpGexColorPos : InpGexColorNeg));
+      CreateOrUpdateBar(barName, (int)cw-bw, (int)y-(InpBarThickness/2), bw, InpBarThickness, (GexArray[i].net_exposure >= 0 ? InpGexColorPos : InpGexColorNeg));
      }
    // ChartRedraw() se llama ahora una sola vez, centralizado, desde
    // OnChartEvent()/FetchAPIData() despues de dibujar todo.
@@ -666,8 +677,17 @@ void DrawStateHistogram()
    
    for(int i = 0; i < ArraySize(StateArray); i++)
      {
+      string barName = "STATE_"+DoubleToString(StateArray[i].strike, 2);
       int x, y; 
-      if(!ChartTimePriceToXY(0, 0, TimeCurrent(), StateArray[i].strike, x, y) || y < 0 || y > ch) continue;
+      if(!ChartTimePriceToXY(0, 0, TimeCurrent(), StateArray[i].strike, x, y) || y < 0 || y > ch)
+        {
+         // La barra quedo fuera del area visible (p.ej. al achicar la ventana
+         // o hacer scroll). Como el objeto esta anclado por pixel, si no se
+         // borra aqui se queda "congelado" en su ultima posicion -> parecia
+         // que las barras se movian sin borrarse. Se borra explicitamente.
+         if(ObjectFind(0, barName) >= 0) ObjectDelete(0, barName);
+         continue;
+        }
       
       double ratio = (MaxStateExposure > 0) ? MathAbs(StateArray[i].imbalance) / MaxStateExposure : 0;
       int bw = (int)MathMax(1, ratio * InpStateMaxBarWidth);
@@ -679,6 +699,6 @@ void DrawStateHistogram()
         }
       
       color clr = (StateArray[i].imbalance >= 0) ? InpStateColorPos : InpStateColorNeg;
-      CreateOrUpdateBar("STATE_"+DoubleToString(StateArray[i].strike, 2), barX, (int)y-(InpBarThickness/2), bw, InpBarThickness, clr);
+      CreateOrUpdateBar(barName, barX, (int)y-(InpBarThickness/2), bw, InpBarThickness, clr);
      }
   }
