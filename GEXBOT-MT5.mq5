@@ -1,10 +1,10 @@
 //+------------------------------------------------------------------+
-//|                                           GexBOT-MT5.mq5         |
-//|                 EA para leer niveles desde API de Gexbot         |
+//|                                           Gexbot Integration.mq5 |
+//|               EA para ingegrar Gexbot Classic con MT5            |
 //+------------------------------------------------------------------+
 #property copyright "Romer Franco"
 #property link      "Public"
-#property version   "2.14"
+#property version   "2.15"
 
 enum ENUM_DTE {
    DTE_zero, // zero
@@ -41,11 +41,11 @@ input color         InpDexColorNeg     = clrRed;                          // Col
 input color         InpGexColorPos     = clrGreen;                        // Color GEX VOL Positivo (Derecha)
 input color         InpGexColorNeg     = clrRed;                          // Color GEX VOL Negativo (Derecha)
 
+input color         InpZeroGammaClr    = clrOrange;                       // Color linea Zero Gamma
 input color         InpGexCallWallClr  = clrLimeGreen;                    // Color linea Vol Call Wall
 input color         InpGexPutWallClr   = clrRed;                          // Color linea Vol Put Wall
 input color         InpDexCallWallClr  = clrGreen;                        // Color linea OI Call Wall
 input color         InpDexPutWallClr   = clrRed;                          // Color linea OI Put Wall
-input color         InpFlipPointClr    = clrGold;                         // Color linea Flip Point
 
 //--- Estructuras
 struct ExposureData { double strike; double net_exposure; };
@@ -63,7 +63,7 @@ double NetGexVol = 0;
 double NetGexOI = 0;
 double MaxPriorsStrike[5];
 double MaxPriorsGex[5];
-bool ShowDashboard = true; // Estado del panel (Abierto/Cerrado)
+bool ShowDashboard = true; 
 
 //+------------------------------------------------------------------+
 int OnInit() { EventSetTimer(InpRefreshSeconds); FetchAPIData(); return(INIT_SUCCEEDED); }
@@ -120,12 +120,13 @@ bool ParseAPIResponse(string json)
    
    ArrayResize(GexArray, 0); ArrayResize(DexArray, 0); MaxGexExposure = 0; MaxDexExposure = 0;
 
-   GexCallWall = ExtractRawValue(json, "\"major_pos_vol\":") * InpStrikeMultiply;
-   GexPutWall  = ExtractRawValue(json, "\"major_neg_vol\":") * InpStrikeMultiply;
-   DexCallWall = ExtractRawValue(json, "\"major_pos_oi\":")  * InpStrikeMultiply;
-   DexPutWall  = ExtractRawValue(json, "\"major_neg_oi\":")  * InpStrikeMultiply;
+   // Extracción 100% Nativa del JSON
+   ZeroGamma   = ExtractRawValue(json, "\"zero_gamma\":")    * InpStrikeMultiply;
+   GexCallWall = ExtractRawValue(json, "\"major_pos_vol\":")  * InpStrikeMultiply;
+   GexPutWall  = ExtractRawValue(json, "\"major_neg_vol\":")  * InpStrikeMultiply;
+   DexCallWall = ExtractRawValue(json, "\"major_pos_oi\":")   * InpStrikeMultiply;
+   DexPutWall  = ExtractRawValue(json, "\"major_neg_oi\":")   * InpStrikeMultiply;
 
-   ZeroGamma = ExtractRawValue(json, "\"zero_gamma\":") * InpStrikeMultiply;
    NetGexVol = ExtractRawValue(json, "\"sum_gex_vol\":");
    NetGexOI  = ExtractRawValue(json, "\"sum_gex_oi\":");
 
@@ -184,7 +185,7 @@ void CreateOrUpdateBar(string name, int x, int y, int width, int height, color c
    ObjectSetInteger(0, name, OBJPROP_XDISTANCE, x); ObjectSetInteger(0, name, OBJPROP_YDISTANCE, y);
    ObjectSetInteger(0, name, OBJPROP_XSIZE, width); ObjectSetInteger(0, name, OBJPROP_YSIZE, height);
    ObjectSetInteger(0, name, OBJPROP_BGCOLOR, clr);
-   ObjectSetInteger(0, name, OBJPROP_BACK, InpDrawBehind); // Ajuste de profundidad
+   ObjectSetInteger(0, name, OBJPROP_BACK, InpDrawBehind);
   }
 
 void AddLevelToArray(LevelInfo &arr[], double price, color clr, string label)
@@ -200,13 +201,13 @@ void AddLevelToArray(LevelInfo &arr[], double price, color clr, string label)
 void DrawKeyLevels()
   {
    LevelInfo levels[];
-   double flip = (GexPutWall > 0 && DexPutWall > 0) ? (GexPutWall + DexPutWall) / 2.0 : (GexPutWall > 0 ? GexPutWall : DexPutWall);
 
+   // Agregamos los 5 niveles directos del JSON (cero cálculos inventados)
+   AddLevelToArray(levels, ZeroGamma, InpZeroGammaClr, "Zero Gamma");
    AddLevelToArray(levels, GexCallWall, InpGexCallWallClr, "Vol Call Wall");
    AddLevelToArray(levels, GexPutWall, InpGexPutWallClr, "Vol Put Wall");
    AddLevelToArray(levels, DexCallWall, InpDexCallWallClr, "OI Call Wall");
    AddLevelToArray(levels, DexPutWall, InpDexPutWallClr, "OI Put Wall");
-   AddLevelToArray(levels, flip, InpFlipPointClr, "Flip Point");
 
    int firstVisible = (int)ChartGetInteger(0, CHART_FIRST_VISIBLE_BAR);
    int offset = (int)ChartGetInteger(0, CHART_VISIBLE_BARS) / 10;
@@ -239,7 +240,7 @@ void DrawKeyLevels()
       ObjectSetDouble(0, lineName, OBJPROP_PRICE, curPrice);
       ObjectSetInteger(0, lineName, OBJPROP_COLOR, mainColor);
       ObjectSetInteger(0, lineName, OBJPROP_STYLE, STYLE_DASH);
-      ObjectSetInteger(0, lineName, OBJPROP_BACK, InpDrawBehind); // Ajuste de profundidad
+      ObjectSetInteger(0, lineName, OBJPROP_BACK, InpDrawBehind);
 
       if(ObjectFind(0, textName) < 0) ObjectCreate(0, textName, OBJ_TEXT, 0, textTime, curPrice);
       ObjectSetDouble(0, textName, OBJPROP_PRICE, curPrice);
@@ -248,7 +249,7 @@ void DrawKeyLevels()
       ObjectSetInteger(0, textName, OBJPROP_COLOR, mainColor);
       ObjectSetInteger(0, textName, OBJPROP_FONTSIZE, 9);
       ObjectSetInteger(0, textName, OBJPROP_ANCHOR, ANCHOR_LEFT_LOWER);
-      ObjectSetInteger(0, textName, OBJPROP_BACK, InpDrawBehind); // Ajuste de profundidad
+      ObjectSetInteger(0, textName, OBJPROP_BACK, InpDrawBehind);
       
       drawIndex++;
      }
@@ -320,7 +321,7 @@ void CreateDashboardLabel(string name, string text, int x, int y, color clr, int
    ObjectSetInteger(0, name, OBJPROP_FONTSIZE, fontSize);
    ObjectSetString(0, name, OBJPROP_FONT, bold ? "Trebuchet MS Bold" : "Trebuchet MS");
    ObjectSetInteger(0, name, OBJPROP_ANCHOR, anchor);
-   ObjectSetInteger(0, name, OBJPROP_BACK, InpDrawBehind); // Ajuste de profundidad
+   ObjectSetInteger(0, name, OBJPROP_BACK, InpDrawBehind);
   }
 
 void DrawDashboard()
@@ -335,7 +336,6 @@ void DrawDashboard()
    int startX = 20;
    int startY = 40;
    
-   // Calcular Posición según el Input
    switch(InpDashPos)
      {
       case POS_TOP_LEFT:       startX = 20; startY = 40; break;
@@ -346,11 +346,10 @@ void DrawDashboard()
       case POS_BOTTOM_CENTER:  startX = (int)(chartW - panelW) / 2; startY = (int)chartH - panelH - 50; break;
      }
 
-   // --- Crear Botón Toggle (Mostrar/Ocultar) ---
    if(ObjectFind(0, "BTN_DASH_TOGGLE") < 0) ObjectCreate(0, "BTN_DASH_TOGGLE", OBJ_BUTTON, 0, 0, 0);
    ObjectSetInteger(0, "BTN_DASH_TOGGLE", OBJPROP_CORNER, CORNER_LEFT_UPPER);
-   ObjectSetInteger(0, "BTN_DASH_TOGGLE", OBJPROP_XDISTANCE, startX + 10);
-   ObjectSetInteger(0, "BTN_DASH_TOGGLE", OBJPROP_YDISTANCE, startY - 10);
+   ObjectSetInteger(0, "BTN_DASH_TOGGLE", OBJPROP_XDISTANCE, startX);
+   ObjectSetInteger(0, "BTN_DASH_TOGGLE", OBJPROP_YDISTANCE, startY - 22);
    ObjectSetInteger(0, "BTN_DASH_TOGGLE", OBJPROP_XSIZE, ShowDashboard ? 60 : 100);
    ObjectSetInteger(0, "BTN_DASH_TOGGLE", OBJPROP_YSIZE, 18);
    ObjectSetString(0, "BTN_DASH_TOGGLE", OBJPROP_TEXT, ShowDashboard ? "Ocultar" : "+ Mostrar Panel");
@@ -359,7 +358,7 @@ void DrawDashboard()
    ObjectSetInteger(0, "BTN_DASH_TOGGLE", OBJPROP_BORDER_COLOR, clrDimGray);
    ObjectSetString(0, "BTN_DASH_TOGGLE", OBJPROP_FONT, "Trebuchet MS");
    ObjectSetInteger(0, "BTN_DASH_TOGGLE", OBJPROP_FONTSIZE, 8);
-   ObjectSetInteger(0, "BTN_DASH_TOGGLE", OBJPROP_BACK, false); // El botón siempre al frente
+   ObjectSetInteger(0, "BTN_DASH_TOGGLE", OBJPROP_BACK, false);
 
    if(!ShowDashboard) return;
 
