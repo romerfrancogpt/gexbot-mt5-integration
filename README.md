@@ -1,9 +1,9 @@
 # GexBOT MT5 Integration
 
-An open-source Expert Advisor (EA) for MetaTrader 5 that fetches real-time Gamma Exposure (GEX) profiles and key levels from the **Gexbot API (Classic Version)** and plots them directly on your MT5 charts.
+An open-source Expert Advisor (EA) for MetaTrader 5 that fetches real-time Gamma Exposure (GEX) profiles and key levels from the **Gexbot API (Classic Version and State)** and plots them directly on your MT5 charts.
 
 > **Note:**  
-> * **Gexbot Model:** This integration is specifically designed for **Gexbot Classic** data.  
+> * **Gexbot Model:** This integration is specifically designed for **Gexbot Classic** data and **Gexbot State**.  
 > * **Language:** Source code comments and on-screen user interface elements (such as dashboard labels and button text) are in **Spanish**.
 
 ---
