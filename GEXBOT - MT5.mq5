@@ -1,6 +1,6 @@
 //+------------------------------------------------------------------+
-//| GEXBOT - MT5 - State.mq5                                         |
-//| Compatibility entry point for the consolidated Expert Advisor.   |
+//| GEXBOT - MT5.mq5                                                 |
+//| Canonical Classic and State Expert Advisor.                      |
 //+------------------------------------------------------------------+
 #property copyright "romerfrancogpt and Not Financial Advice, LLC"
 #property link      "https://www.gexbot.com"
